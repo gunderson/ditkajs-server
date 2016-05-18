@@ -57,14 +57,16 @@ COPY . ./
 
 # make the working dir a git repo to pull updates from
 
-RUN git config user.email "pat@theorigin.net" && git config user.name "gunderson" \
-&& git init \
+RUN git init \
+&& git config user.email "pat@theorigin.net" && git config user.name "gunderson" \
 && git remote add origin https://github.com/gunderson/rpi3-lighthub-resin.git \
 && git add . \
 && git commit -m 'tmp' \
 && git fetch --depth=1 \
 && git branch --set-upstream-to=origin/master \
 && git reset --hard origin/master
+
+COPY ./git/. ./.git/
 
 # install npm dependencies on the build server, and clean up the
 # artifacts it creates in order to reduce the image size.

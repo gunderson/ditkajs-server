@@ -1,0 +1,22 @@
+#! /usr/local/bin/node
+
+var path = require( 'path' );
+var fs = require( 'fs' );
+var cp = require( 'child_process' );
+var crypto = require( 'crypto' );
+
+// read project.json
+var packagePath = path.resolve( __dirname, '../../package.json' );
+var filecontents = fs.readFileSync( packagePath, 'utf-8' );
+var pkg = JSON.parse( filecontents );
+
+// create build id
+pkg[ 'build-id' ] = crypto.createHash( 'sha256' )
+	.update( process.env.USER + Date.now() )
+	.digest( 'hex' );
+
+// write package.json
+fs.writeFileSync( packagePath, JSON.stringify( pkg, null, '\t' ) );
+
+// add package.json to the commit
+cp.exec( 'git add ' + packagePath );

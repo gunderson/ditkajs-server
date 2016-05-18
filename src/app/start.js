@@ -1,40 +1,48 @@
 /* eslint indent:0 no-unused-vars:0*/
-
 var _ = require( 'lodash' );
-var pkg = require( '../../package.json' );
+var Autoupdate = require( './js/autoupdate' );
 var chalk = require( 'chalk' );
-var log = require( '../shared/js/TASK/utils/log' );
-var cp = require( 'child_process' );
-var path = require( 'path' );
-var fs = require( 'fs' );
-
 var cli = require( './cli' );
-
-var env = cli.env;
-var runDomains = cli.d;
+var cp = require( 'child_process' );
+var fs = require( 'fs' );
+var log = require( '../shared/js/TASK/utils/log' );
+var path = require( 'path' );
+var pkg = require( '../../package.json' );
 
 log( chalk.green( '----' ), 'STARTING APPLICATION', chalk.green( '----' ) );
 log( chalk.green( 'Starting domains:' ), runDomains );
-log( chalk.green( 'Using environment:' ), env );
+log( chalk.green( 'Using environment:' ), cli.d );
 
-// var GLOBALS = {
-// 	ENV: require( `./shared/js/data/env/${env}` )
-// };
+// ------------------------------------------------------
+// Start Application Services
+
+var autoupdate = new Autoupdate();
+
+if ( cli.env === 'prod' ) {
+	autoupdate.start();
+	autoupdate.on( 'restart-application', restartApplication );
+}
 
 // ------------------------------------------------------
 // start domains
 
 var startedDomainsProcesses = _( pkg.domains )
-	.pick( runDomains )
+	.pick( cli.d )
 	.map( ( domain, domainName ) => {
-		var processPath = path.resolve( __dirname, '../', domainName );
-		var process = cp.fork( path.resolve( processPath, 'start' ), [ '--env', env ], {
+		var processPath = path.resolve( __dirname, '..', domainName );
+		var process = cp.fork( path.resolve( processPath, 'start' ), [ '--env', cli.env ], {
 				cwd: processPath
 			} )
 			.on( 'message', ( message ) => {
 				log( chalk.yellow( domainName ), message );
-				if ( message === 'restart' ) {
-					restartApplication();
+
+				switch ( message ) {
+					case 'autoupdate':
+						autoupdate.update();
+						break;
+					case 'restart':
+						restartApplication();
+						break;
 				}
 			} );
 
@@ -43,6 +51,9 @@ var startedDomainsProcesses = _( pkg.domains )
 		return process;
 	} )
 	.value();
+
+// ------------------------------------------------------
+// Application Directives
 
 function restartApplication() {
 	log( chalk.red( '----' ), 'KILLING APPLICATION', chalk.red( '----' ) );

@@ -1,7 +1,7 @@
 'use strict';
 var TASK = require( '../../shared/js/TASK/TASK' );
 var log = require( '../../shared/js/TASK/utils/log' );
-var _ = require( 'lodash' );
+// var _ = require( 'lodash' );
 var express = require( 'express' );
 var HeaderUtils = require( './utils/HeaderUtils' );
 var logger = require( 'morgan' );
@@ -25,42 +25,52 @@ class Server extends TASK {
 				next();
 			} );
 
-		router.route( '/led/:id/:state' )
+		router.route( '/whoami' )
 			.get( ( req, res, next ) => {
 				HeaderUtils.addJSONHeader( res );
 				HeaderUtils.addCORSHeader( res );
-				res.send( _.pick( req.params, [ 'id', 'state' ] ) );
-				this.trigger( 'led', req.params );
+
+				var data = {
+					action: 'register',
+					groupid: req.params.group,
+					deviceid: req.params.id,
+					address: req.address,
+					services: req.services
+				};
+
+				res.send( data );
 			} );
 
-		router.route( '/play' )
-			.get( ( req, res, next ) => {
+		router.route( '/register/:groupid/:deviceid' )
+			.post( ( req, res, next ) => {
 				HeaderUtils.addJSONHeader( res );
 				HeaderUtils.addCORSHeader( res );
-				res.send( {
-					play: true
-				} );
-				this.trigger( 'play' );
+
+				var data = {
+					action: 'register',
+					groupid: req.params.group,
+					deviceid: req.params.id,
+					address: req.address,
+					services: req.services
+				};
+
+				res.send( data );
+				this.trigger( 'register', req.params );
 			} );
 
-		router.route( '/stop' )
-			.get( ( req, res, next ) => {
+		router.route( '/broadcast/:groupid' )
+			.post( ( req, res, next ) => {
 				HeaderUtils.addJSONHeader( res );
 				HeaderUtils.addCORSHeader( res );
-				res.send( {
-					stop: true
-				} );
-				this.trigger( 'stop' );
-			} );
 
-		router.route( '/update/:from' )
-			.get( ( req, res, next ) => {
-				HeaderUtils.addJSONHeader( res );
-				HeaderUtils.addCORSHeader( res );
-				res.send( {
-					update: true
-				} );
-				this.trigger( 'update', req.params );
+				var data = {
+					action: 'broadcast',
+					groupid: req.params.groupid,
+					message: req.params.message
+				};
+
+				res.send( data );
+				this.trigger( 'broadcast', data );
 			} );
 
 		app.use( '/', router );
