@@ -1,0 +1,78 @@
+FROM resin/raspberrypi3-node:6.0.0
+
+# Enable systemd
+ENV INITSYSTEM on
+
+##############
+
+# Add extra software sources
+
+# RUN apt-get update -qq
+
+# install Libsass
+
+# RUN apt-get install -y curl git build-essential automake libtool
+#
+# # Fetch sources
+#
+# RUN git clone https://github.com/sass/libsass.git
+# RUN git clone https://github.com/sass/sassc.git libsass/sassc
+#
+# # Create configure script
+# WORKDIR /libsass
+# RUN autoreconf --force --install
+# RUN ./configure --disable-tests --enable-shared --prefix=/usr
+# WORKDIR /
+#
+# # Build the library
+# RUN make -C libsass -j5
+# RUN make -C libsass -j5 install
+
+
+# install wiringPi
+# required by npm raspi raspi-io johnny-five
+
+RUN git clone git://git.drogon.net/wiringPi
+WORKDIR /wiringPi
+RUN git pull origin
+RUN ./build
+WORKDIR /
+
+# install gulp for building the website source and node-gyp for compiling
+
+RUN npm set progress=false && npm update && npm install -g gulp node-gyp
+
+# Copy the package.json first for better cache on later pushes
+
+COPY package.json /usr/src/app/package.json
+COPY gulpfile.js /usr/src/app/gulpfile.js
+
+# Set the working directory in container
+
+WORKDIR /usr/src/app
+
+# Copy all files in build server to the working  directory in the container
+
+COPY . ./
+
+# make the working dir a git repo to pull updates from
+
+RUN git config user.email "pat@theorigin.net" && git config user.name "gunderson" \
+&& git init \
+&& git remote add origin https://github.com/gunderson/rpi3-lighthub-resin.git \
+&& git add . \
+&& git commit -m 'tmp' \
+&& git fetch --depth=1 \
+&& git branch --set-upstream-to=origin/master \
+&& git reset --hard origin/master
+
+# install npm dependencies on the build server, and clean up the
+# artifacts it creates in order to reduce the image size.
+
+RUN npm set progress=false && JOBS=MAX npm install --unsafe-perm && npm cache clean && rm -rf /tmp/*
+
+EXPOSE 3000
+EXPOSE 3001
+EXPOSE 3333
+
+CMD ["npm", "start"]
