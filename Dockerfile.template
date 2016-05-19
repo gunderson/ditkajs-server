@@ -3,40 +3,13 @@ FROM resin/raspberrypi3-node:6.0.0
 # Enable systemd
 ENV INITSYSTEM on
 
-##############
+# --------------------------------------------------------------
 
 # Add extra software sources
 
 # RUN apt-get update -qq
 
-# install Libsass
-
-# RUN apt-get install -y curl git build-essential automake libtool
-#
-# # Fetch sources
-#
-# RUN git clone https://github.com/sass/libsass.git
-# RUN git clone https://github.com/sass/sassc.git libsass/sassc
-#
-# # Create configure script
-# WORKDIR /libsass
-# RUN autoreconf --force --install
-# RUN ./configure --disable-tests --enable-shared --prefix=/usr
-# WORKDIR /
-#
-# # Build the library
-# RUN make -C libsass -j5
-# RUN make -C libsass -j5 install
-
-
-# install wiringPi
-# required by npm raspi raspi-io johnny-five
-
-RUN git clone git://git.drogon.net/wiringPi
-WORKDIR /wiringPi
-RUN git pull origin
-RUN ./build
-WORKDIR /
+# --------------------------------------------------------------
 
 # install gulp for building the website source and node-gyp for compiling
 
@@ -54,6 +27,8 @@ WORKDIR /usr/src/app
 # Copy all files in build server to the working  directory in the container
 
 COPY . ./
+
+# --------------------------------------------------------------
 
 # make the working dir a git repo to pull updates from
 
